@@ -190,30 +190,83 @@
   .footer-links a:hover { color:var(--text-primary); }
   footer p { color:var(--text-tertiary); font-size:0.9rem; }
 
-  /* Toast for download feedback */
-  .toast {
+  /* 7-second countdown overlay (shown before opening a backup) */
+  .countdown-overlay {
     position: fixed;
-    left: 50%;
-    bottom: 28px;
-    transform: translateX(-50%) translateY(20px);
-    background: var(--bg-surface);
-    border: 1px solid var(--border-color);
-    color: var(--text-primary);
-    padding: 14px 22px;
-    border-radius: var(--radius-pill);
-    font-size: 0.9rem;
-    font-weight: 500;
+    inset: 0;
+    background: rgba(9, 9, 11, 0.92);
+    backdrop-filter: blur(6px);
     display: flex;
+    flex-direction: column;
     align-items: center;
-    gap: 10px;
+    justify-content: center;
+    gap: 22px;
     opacity: 0;
     pointer-events: none;
-    transition: opacity 0.3s ease, transform 0.3s ease;
-    z-index: 2000;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.4);
+    transition: opacity 0.25s ease;
+    z-index: 3000;
+    text-align: center;
+    padding: 24px;
   }
-  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
-  .toast i { color: var(--accent-color); }
+  .countdown-overlay.show { opacity: 1; pointer-events: auto; }
+  .countdown-ring-wrap { position: relative; width: 160px; height: 160px; }
+  .countdown-ring-wrap svg { width: 100%; height: 100%; transform: rotate(-90deg); }
+  .countdown-ring-bg { fill: none; stroke: var(--border-color); stroke-width: 8; }
+  .countdown-ring-progress {
+    fill: none;
+    stroke: var(--accent-color);
+    stroke-width: 8;
+    stroke-linecap: round;
+    transition: stroke-dashoffset 1s linear;
+  }
+  .countdown-circle-face {
+    position: absolute; inset: 10px;
+    background: #fafafa;
+    border-radius: 50%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 0 40px rgba(13,148,136,0.35);
+  }
+  .countdown-num { font-size: 2.6rem; font-weight: 800; color: #09090b; line-height: 1; }
+  .countdown-sec-label { font-size: 0.7rem; font-weight: 700; letter-spacing: 0.1em; color: #71717a; margin-top: 4px; text-transform: uppercase; }
+  .countdown-text { color: var(--text-secondary); font-size: 0.95rem; max-width: 320px; }
+  .countdown-text b { color: var(--text-primary); }
+
+  .countdown-percent {
+    font-size: 0.85rem; font-weight: 700; color: var(--accent-color);
+    letter-spacing: 0.02em;
+  }
+
+  .countdown-progress-bar {
+    width: 220px; height: 6px; border-radius: var(--radius-pill);
+    background: var(--bg-surface); border: 1px solid var(--border-color);
+    overflow: hidden;
+  }
+  .countdown-progress-fill {
+    height: 100%; width: 0%;
+    background: var(--accent-color);
+    border-radius: var(--radius-pill);
+    transition: width 1s linear;
+  }
+
+  .countdown-cancel {
+    margin-top: 4px;
+    background: transparent;
+    border: 1px solid var(--border-color);
+    color: var(--text-secondary);
+    padding: 10px 22px;
+    border-radius: var(--radius-pill);
+    font-weight: 600; font-size: 0.85rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+  .countdown-cancel:hover {
+    background: var(--bg-surface-hover);
+    color: var(--text-primary);
+    border-color: #3f3f46;
+  }
 
   @media (max-width:640px) {
     .backup-card { flex-wrap:wrap; }
@@ -282,7 +335,25 @@
   </div>
 </footer>
 
-<div class="toast" id="toast"><i class="fa-solid fa-circle-check"></i><span id="toastText">Downloading backup...</span></div>
+<div class="countdown-overlay" id="countdownOverlay">
+  <div class="countdown-ring-wrap">
+    <svg viewBox="0 0 160 160">
+      <circle class="countdown-ring-bg" cx="80" cy="80" r="70"></circle>
+      <circle class="countdown-ring-progress" id="countdownRing" cx="80" cy="80" r="70"></circle>
+    </svg>
+    <div class="countdown-circle-face">
+      <div class="countdown-num" id="countdownNum">7</div>
+      <div class="countdown-sec-label">Seconds</div>
+    </div>
+  </div>
+
+  <div class="countdown-percent" id="countdownPercent">0%</div>
+  <div class="countdown-progress-bar">
+    <div class="countdown-progress-fill" id="countdownProgressFill"></div>
+  </div>
+
+  <button class="countdown-cancel" id="countdownCancel" type="button">Cancel</button>
+</div>
 
 <script>
   // Mobile menu toggle
@@ -301,10 +372,13 @@
     }
   });
 
-  // Each backup now has a real "file" property (the .json/.zip it links to).
-  // Replace these URLs with your actual raw GitHub backup file links.
+  // ============================================
+  // 👉 EDIT HERE: replace "file" with your real
+  // raw GitHub JSON backup link for each entry.
+  // Example: "https://raw.githubusercontent.com/USER/REPO/main/backup.json"
+  // ============================================
   const backups = [
-    { name: "ioannisxir's Backup", by: "John Xirouchakis", date: "Jul 28, 2026, 05:59 PM", file: "https://rakshittips.github.io/backup_library/details/Honista.html" },
+    { name: "ioannisxir's Backup", by: "John Xirouchakis", date: "Jul 28, 2026, 05:59 PM", file: "details/Honista.html" },
     { name: "Zain's Backup", by: "Zain", date: "Jul 27, 2026, 09:31 PM", file: "https://raw.githubusercontent.com/Rakshittips/Rakshittips/main/backups/zain.json" },
     { name: "Vini's Backup", by: "PixelVini", date: "Jul 19, 2026, 08:17 PM", file: "https://raw.githubusercontent.com/Rakshittips/Rakshittips/main/backups/vini.json" },
     { name: "Zain's AI-less Backup", by: "Zain", date: "Jul 19, 2026, 01:33 PM", file: "https://raw.githubusercontent.com/Rakshittips/Rakshittips/main/backups/zain-ai-less.json" },
@@ -313,16 +387,59 @@
   ];
 
   const list = document.getElementById('backup-list');
-  const toast = document.getElementById('toast');
-  const toastText = document.getElementById('toastText');
-  let toastTimer;
+  const overlay = document.getElementById('countdownOverlay');
+  const countdownNum = document.getElementById('countdownNum');
+  const countdownRing = document.getElementById('countdownRing');
+  const countdownPercent = document.getElementById('countdownPercent');
+  const countdownProgressFill = document.getElementById('countdownProgressFill');
+  const countdownCancel = document.getElementById('countdownCancel');
 
-  function showToast(msg) {
-    toastText.textContent = msg;
-    toast.classList.add('show');
-    clearTimeout(toastTimer);
-    toastTimer = setTimeout(() => toast.classList.remove('show'), 2200);
+  const RADIUS = 70;
+  const CIRCUMFERENCE = 2 * Math.PI * RADIUS;
+  countdownRing.style.strokeDasharray = CIRCUMFERENCE;
+
+  let countdownTimer;
+
+  function stopCountdown() {
+    clearInterval(countdownTimer);
+    overlay.classList.remove('show');
   }
+
+  function startCountdown(name, fileUrl) {
+    let secondsLeft = 7;
+    countdownNum.textContent = secondsLeft;
+    countdownPercent.textContent = '0%';
+    countdownProgressFill.style.transition = 'none';
+    countdownProgressFill.style.width = '0%';
+    countdownRing.style.transition = 'none';
+    countdownRing.style.strokeDashoffset = 0;
+    // force reflow so the transitions re-apply cleanly next tick
+    void countdownRing.offsetWidth;
+    countdownRing.style.transition = 'stroke-dashoffset 1s linear';
+    countdownProgressFill.style.transition = 'width 1s linear';
+
+    overlay.classList.add('show');
+    clearInterval(countdownTimer);
+
+    countdownTimer = setInterval(() => {
+      secondsLeft -= 1;
+      const progress = (7 - secondsLeft) / 7;
+      countdownRing.style.strokeDashoffset = CIRCUMFERENCE * progress;
+      countdownProgressFill.style.width = `${Math.round(progress * 100)}%`;
+      countdownPercent.textContent = `${Math.round(progress * 100)}%`;
+
+      if (secondsLeft <= 0) {
+        clearInterval(countdownTimer);
+        countdownNum.textContent = '0';
+        overlay.classList.remove('show');
+        window.open(fileUrl, '_blank');
+      } else {
+        countdownNum.textContent = secondsLeft;
+      }
+    }, 1000);
+  }
+
+  countdownCancel.addEventListener('click', stopCountdown);
 
   backups.forEach(b => {
     const card = document.createElement('button');
@@ -342,8 +459,7 @@
       <i class="fa-solid fa-chevron-right chevron"></i>
     `;
     card.addEventListener('click', () => {
-      showToast(`Opening "${b.name}"...`);
-      window.open(b.file, '_blank');
+      startCountdown(b.name, b.file);
     });
     list.appendChild(card);
   });
