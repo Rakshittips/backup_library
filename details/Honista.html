@@ -65,6 +65,9 @@
   .btn:hover { background: var(--bg-surface-hover); border-color:#3f3f46; }
   .btn-solid { background: var(--text-primary); color: var(--bg-base); border:none; }
   .btn-solid:hover { background:#e4e4e7; transform: translateY(-2px); box-shadow:0 10px 25px rgba(13,148,136,0.25); }
+  .btn.downloading { background: var(--bg-surface-hover); color: var(--text-secondary); cursor:default; pointer-events:none; }
+  .btn.downloading i { color: var(--accent-color); }
+  .btn.done { color: var(--accent-color); border-color: var(--accent-color); }
 
   /* Cards */
   .card {
@@ -163,9 +166,9 @@
       <p>Yeah, most known backup in the world!</p>
 
       <div class="btn-row">
-        <button class="btn">
+        <button class="btn" id="downloadBtn">
           <i class="fa-solid fa-download"></i>
-          Download Backup
+          <span class="btn-label">Download Backup</span>
         </button>
         <button class="btn">
           <i class="fa-solid fa-mobile-screen-button"></i>
@@ -252,12 +255,28 @@
     icon.classList.toggle('fa-xmark');
   });
 
-  const releasesToggle = document.getElementById('releasesToggle');
-  const releasesBody = document.getElementById('releasesBody');
-  const chevronIcon = document.getElementById('chevronIcon');
-  releasesToggle.addEventListener('click', () => {
-    releasesBody.style.display = releasesBody.style.display === 'none' ? 'flex' : 'none';
-    chevronIcon.classList.toggle('open');
+  // Download button interaction: idle -> downloading -> done -> idle
+  const downloadBtn = document.getElementById('downloadBtn');
+  downloadBtn.addEventListener('click', () => {
+    const icon = downloadBtn.querySelector('i');
+    const label = downloadBtn.querySelector('.btn-label');
+
+    downloadBtn.classList.add('downloading');
+    icon.className = 'fa-solid fa-circle-check';
+    label.textContent = 'Downloading...';
+
+    setTimeout(() => {
+      downloadBtn.classList.remove('downloading');
+      downloadBtn.classList.add('done');
+      icon.className = 'fa-solid fa-check';
+      label.textContent = 'Downloaded';
+
+      setTimeout(() => {
+        downloadBtn.classList.remove('done');
+        icon.className = 'fa-solid fa-download';
+        label.textContent = 'Download Backup';
+      }, 2000);
+    }, 1800);
   });
 
   const shots = [
